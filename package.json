@@ -7,8 +7,10 @@
   "scripts": {
     "dev:backend": "pnpm --filter backend dev",
     "dev:extension": "pnpm --filter extension dev",
+    "dev:web": "pnpm --filter web dev",
     "build:backend": "pnpm --filter @mini-apty/shared build && pnpm --filter backend build",
-    "build:vercel": "pnpm build:backend && node scripts/ensure-public.mjs",
+    "build:web": "pnpm --filter web build",
+    "build:vercel": "pnpm build:backend && pnpm build:web",
     "build:extension": "pnpm --filter @mini-apty/shared build && pnpm --filter extension build",
     "test:backend": "pnpm --filter backend test",
     "build": "pnpm build:backend && pnpm build:extension",

@@ -6,6 +6,7 @@ dist/
 *.log
 .DS_Store
 coverage/
+public/
 packages/extension/dist/
 *.zip
 mini-apty-extension.zip

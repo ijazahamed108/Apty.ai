@@ -4,7 +4,7 @@ Mini Apty has two deployable parts:
 
 | Part | Host on | Free option |
 |------|---------|-------------|
-| **API** (Express + MongoDB) | Vercel, Render, GitLab | Vercel Hobby / Render Free / GitLab CI + Render |
+| **Web + API** (React + Express + MongoDB) | Vercel | Vercel Hobby |
 | **Database** | MongoDB Atlas | M0 free cluster |
 | **Extension** (Chrome) | Not a web deploy | GitLab CI artifact ZIP → Load unpacked |
 
@@ -40,19 +40,20 @@ If your password contains special characters (like `@`, `#`, `$`, etc.), you **m
 ## 2. Deploy API to Vercel (recommended)
 
 1. Push repo to **GitHub** or **GitLab** and import in [vercel.com](https://vercel.com).
-2. Framework preset: **Other**.
+2. Framework preset: **Vite**.
 3. Root directory: repository root (monorepo).
 4. **Critical — Vercel project settings** (Settings → Build & Deployment):
-   - **Framework Preset:** Other
+   - **Framework Preset:** Vite
+   - **Output Directory:** `public`
    - Install/build commands are read from `vercel.json` automatically
-   - `vercel.json` uses explicit `builds/routes`, so dashboard Build & Development settings are ignored by Vercel.
 
 5. The `vercel.json` file configures:
    - Install: `npm install -g pnpm@9 && pnpm install --prod=false`
-   - Build: `pnpm -w run build:backend` (the `-w` flag runs from monorepo root — required on Vercel)
-   - Serverless function builder: `api/index.ts` via `@vercel/node`
+   - Build: `pnpm -w run build:vercel`
+   - React frontend output: `packages/web` builds into root `public/`
+   - Express API: `api/index.ts` handles `/health`, `/auth/*`, and `/walkthroughs/*`
    
-   **Note:** This project is deployed as a serverless API, not as a static `public/` output deployment.
+   **Note:** The Chrome extension remains the main challenge deliverable. The Vercel React app is a simple live demo/landing frontend for the MERN deployment.
 
 6. Set **Environment variables** (Production):
 
@@ -150,9 +151,9 @@ pnpm build:extension          # dist for Chrome
 
 | Issue | Fix |
 |-------|-----|
-| `No entrypoint found in output directory: "public"` | Use explicit `builds/routes` in `vercel.json`; do not deploy this as a Node/static output-directory project |
+| `No entrypoint found in output directory: "public"` | Use Vite framework + `public` output. `pnpm -w run build:vercel` must create `public/index.html` |
 | `ERR_PNPM_NO_SCRIPT` in monorepo build | Use `pnpm -w run ...` for root scripts; Vercel can invoke commands from a workspace subfolder |
-| `No Output Directory named "public" found` | Remove output-directory deployment settings; the API is built through `@vercel/node` |
+| `No Output Directory named "public" found` | Run `pnpm -w run build:vercel`; the React web package must create root `public/` |
 | `tsc: command not found` during build | Ensure install command includes `--prod=false` (already in `vercel.json`/`render.yaml`) |
 | Vercel 500 on first request | Check Atlas IP allowlist and `MONGODB_URI` |
 | Extension can't reach API | Rebuild with correct `VITE_API_BASE_URL` |
