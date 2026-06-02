@@ -1,14 +1,14 @@
 import { Router, type IRouter, Request, Response, NextFunction } from 'express';
 import { CreateWalkthroughSchema, UpdateWalkthroughSchema } from '@mini-apty/shared';
 import { WalkthroughService } from '../services/walkthrough.service.js';
-import { authenticate } from '../middleware/auth.middleware.js';
+import { authenticate, requireRole } from '../middleware/auth.middleware.js';
 import { validate } from '../middleware/validate.middleware.js';
 import { AppError } from '../lib/errors.js';
 import { z } from 'zod';
 
 export const walkthroughRouter: IRouter = Router();
 
-walkthroughRouter.use(authenticate);
+walkthroughRouter.use(authenticate, requireRole('author', 'admin'));
 
 const listQuerySchema = z.object({
   origin: z.string().min(1),
@@ -38,7 +38,12 @@ walkthroughRouter.get('/', async (req: Request, res: Response, next: NextFunctio
 
     const { origin, path } = parsed.data;
     const service = new WalkthroughService(req.app.locals.db);
-    const walkthroughs = await service.listByOriginAndPath(req.user!.sub, origin, path);
+    const walkthroughs = await service.listByOriginAndPath(
+      req.user!.sub,
+      origin,
+      path,
+      req.user!.role
+    );
     res.json(walkthroughs);
   } catch (err) {
     next(err);
@@ -48,7 +53,7 @@ walkthroughRouter.get('/', async (req: Request, res: Response, next: NextFunctio
 walkthroughRouter.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const service = new WalkthroughService(req.app.locals.db);
-    const walkthrough = await service.getById(req.user!.sub, req.params.id);
+    const walkthrough = await service.getById(req.user!.sub, req.params.id, req.user!.role);
     res.json(walkthrough);
   } catch (err) {
     next(err);
@@ -61,7 +66,12 @@ walkthroughRouter.put(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const service = new WalkthroughService(req.app.locals.db);
-      const walkthrough = await service.update(req.user!.sub, req.params.id, req.body);
+      const walkthrough = await service.update(
+        req.user!.sub,
+        req.params.id,
+        req.body,
+        req.user!.role
+      );
       res.json(walkthrough);
     } catch (err) {
       next(err);
@@ -72,7 +82,7 @@ walkthroughRouter.put(
 walkthroughRouter.delete('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const service = new WalkthroughService(req.app.locals.db);
-    await service.delete(req.user!.sub, req.params.id);
+    await service.delete(req.user!.sub, req.params.id, req.user!.role);
     res.status(204).send();
   } catch (err) {
     next(err);

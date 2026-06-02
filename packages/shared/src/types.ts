@@ -1,8 +1,11 @@
-export type { AdvanceTrigger, ElementFingerprint, ElementTarget, WalkthroughStep, Walkthrough, CreateWalkthroughInput, UpdateWalkthroughInput, ApiError } from './schemas.js';
+import type { UserRole } from './schemas.js';
+
+export type { AdvanceTrigger, ElementFingerprint, ElementTarget, WalkthroughStep, Walkthrough, CreateWalkthroughInput, UpdateWalkthroughInput, UserRole, ApiError } from './schemas.js';
 
 export type SessionUser = {
   id: string;
   email: string;
+  role: UserRole;
 };
 
 export type PlayerProgress = {

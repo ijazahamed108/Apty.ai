@@ -60,6 +60,7 @@ If your password contains special characters (like `@`, `#`, `$`, etc.), you **m
    | Variable | Example |
    |----------|---------|
    | `JWT_SECRET` | long random string (32+ chars) |
+   | `ADMIN_EMAILS` | `admin@example.com` |
    | `MONGODB_URI` | Atlas connection string |
    | `MONGODB_DB` | `miniapty` |
    | `NODE_ENV` | `production` |
@@ -127,6 +128,7 @@ For CI, set `VITE_API_BASE_URL` as a GitLab CI/CD variable and pass to build job
 | Variable | Where | Required |
 |----------|-------|----------|
 | `JWT_SECRET` | Backend | Yes |
+| `ADMIN_EMAILS` | Backend | No (comma-separated admin-role emails) |
 | `MONGODB_URI` | Backend | Yes |
 | `MONGODB_DB` | Backend | No (default `miniapty`) |
 | `CORS_ORIGIN` | Backend | No (`*` ok for extension) |

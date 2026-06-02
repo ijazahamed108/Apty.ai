@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import { AuthService } from '../../src/services/auth.service.js';
 import { AppError } from '../../src/lib/errors.js';
 import type { Db, Collection } from 'mongodb';
@@ -25,6 +26,7 @@ describe('AuthService', () => {
   let service: AuthService;
 
   beforeEach(() => {
+    delete process.env.ADMIN_EMAILS;
     users = createMockCollection<UserDocument>();
     db = createMockDb(users);
     service = new AuthService(db, jwtSecret);
@@ -37,11 +39,24 @@ describe('AuthService', () => {
     const result = await service.signup('Test@Example.com', 'password123');
 
     expect(result.user.email).toBe('test@example.com');
+    expect(result.user.role).toBe('author');
     expect(result.token).toBeTruthy();
     expect(users.findOne).toHaveBeenCalledWith(
       { email: 'test@example.com' },
       { projection: { _id: 1 } }
     );
+  });
+
+  it('signup assigns admin role for configured admin emails', async () => {
+    process.env.ADMIN_EMAILS = 'admin@example.com';
+    vi.mocked(users.findOne).mockResolvedValueOnce(null);
+    vi.mocked(users.insertOne).mockResolvedValueOnce({ acknowledged: true } as never);
+
+    const result = await service.signup('Admin@Example.com', 'password123');
+    const payload = jwt.verify(result.token, jwtSecret) as { role: string };
+
+    expect(result.user.role).toBe('admin');
+    expect(payload.role).toBe('admin');
   });
 
   it('signup rejects duplicate email', async () => {
@@ -58,6 +73,7 @@ describe('AuthService', () => {
     vi.mocked(users.findOne).mockResolvedValueOnce({
       _id: 'user-1',
       email: 'test@example.com',
+      role: 'author',
       passwordHash: hash,
       createdAt: new Date(),
     });
@@ -73,6 +89,7 @@ describe('AuthService', () => {
     vi.mocked(users.findOne).mockResolvedValueOnce({
       _id: 'user-1',
       email: 'test@example.com',
+      role: 'author',
       passwordHash: hash,
       createdAt: new Date(),
     });

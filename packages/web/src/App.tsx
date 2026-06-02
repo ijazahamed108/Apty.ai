@@ -8,12 +8,17 @@ export function App() {
 
   const checkHealth = async () => {
     setHealthState('loading');
-    setMessage('Checking /health...');
+    setMessage('Checking /api/health...');
 
     try {
-      const response = await fetch('/health');
+      const response = await fetch('/api/health');
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
+      }
+
+      const contentType = response.headers.get('content-type') ?? '';
+      if (!contentType.includes('application/json')) {
+        throw new Error('API returned non-JSON response');
       }
 
       const data = (await response.json()) as { status: string; service: string };
@@ -55,7 +60,7 @@ export function App() {
           <h2>Express API</h2>
           <p>
             Serverless routes handle <code>/auth/*</code>, <code>/walkthroughs/*</code>, and{' '}
-            <code>/health</code> using the same backend as local development.
+            <code>/api/health</code> using the same backend as local development.
           </p>
         </article>
         <article>

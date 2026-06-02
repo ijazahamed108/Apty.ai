@@ -7,13 +7,13 @@
   "outputDirectory": "packages/web/public",
   "framework": "vite",
   "rewrites": [
-    { "source": "/health", "destination": "/api" },
-    { "source": "/auth/(.*)", "destination": "/api" },
-    { "source": "/walkthroughs/(.*)", "destination": "/api" },
-    { "source": "/walkthroughs", "destination": "/api" }
+    { "source": "/health", "destination": "/api/health" },
+    { "source": "/auth/(.*)", "destination": "/api/auth/$1" },
+    { "source": "/walkthroughs/(.*)", "destination": "/api/walkthroughs/$1" },
+    { "source": "/walkthroughs", "destination": "/api/walkthroughs" }
   ],
   "functions": {
-    "api/index.ts": {
+    "api/**/*.ts": {
       "maxDuration": 30
     }
   }

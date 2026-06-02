@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import type { UserRole } from '@mini-apty/shared';
 import { MongoServerError, type Db } from 'mongodb';
 import { AppError } from '../lib/errors.js';
 import { COLLECTIONS, type UserDocument } from '../db/collections.js';
@@ -10,6 +11,7 @@ const SALT_ROUNDS = 12;
 export type AuthUser = {
   id: string;
   email: string;
+  role: UserRole;
 };
 
 export class AuthService {
@@ -20,6 +22,7 @@ export class AuthService {
 
   async signup(email: string, password: string): Promise<{ token: string; user: AuthUser }> {
     const normalizedEmail = email.toLowerCase();
+    const role = this.resolveSignupRole(normalizedEmail);
     const users = this.db.collection<UserDocument>(COLLECTIONS.users);
 
     const existing = await users.findOne({ email: normalizedEmail }, { projection: { _id: 1 } });
@@ -31,6 +34,7 @@ export class AuthService {
     const user: UserDocument = {
       _id: randomUUID(),
       email: normalizedEmail,
+      role,
       passwordHash,
       createdAt: new Date(),
     };
@@ -44,8 +48,8 @@ export class AuthService {
       throw err;
     }
 
-    const token = this.signToken(user._id, user.email);
-    return { token, user: { id: user._id, email: user.email } };
+    const token = this.signToken(user._id, user.email, user.role);
+    return { token, user: { id: user._id, email: user.email, role: user.role } };
   }
 
   async login(email: string, password: string): Promise<{ token: string; user: AuthUser }> {
@@ -62,11 +66,21 @@ export class AuthService {
       throw new AppError(401, 'INVALID_CREDENTIALS', 'Invalid email or password');
     }
 
-    const token = this.signToken(user._id, user.email);
-    return { token, user: { id: user._id, email: user.email } };
+    const role = user.role ?? 'author';
+    const token = this.signToken(user._id, user.email, role);
+    return { token, user: { id: user._id, email: user.email, role } };
   }
 
-  private signToken(userId: string, email: string): string {
-    return jwt.sign({ sub: userId, email }, this.jwtSecret, { expiresIn: '7d' });
+  private signToken(userId: string, email: string, role: UserRole): string {
+    return jwt.sign({ sub: userId, email, role }, this.jwtSecret, { expiresIn: '7d' });
+  }
+
+  private resolveSignupRole(email: string): UserRole {
+    const adminEmails = (process.env.ADMIN_EMAILS ?? '')
+      .split(',')
+      .map((value) => value.trim().toLowerCase())
+      .filter(Boolean);
+
+    return adminEmails.includes(email) ? 'admin' : 'author';
   }
 }

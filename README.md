@@ -52,7 +52,7 @@ pnpm test:backend
 ## Stack
 
 - **MongoDB** — walkthroughs + users (Atlas in prod, Docker locally)
-- **Express** — JWT auth, owner-scoped CRUD, Zod validation
+- **Express** — JWT auth, RBAC (`author`/`admin`), owner-scoped CRUD, Zod validation
 - **React** — MV3 popup + Shadow DOM preview overlay
 - **Zustand + Zod** — extension state and shared schemas
 - **Element targeting** — stable attrs → anchor path → XPath → fingerprint + MutationObserver

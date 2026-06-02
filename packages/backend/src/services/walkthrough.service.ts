@@ -3,6 +3,7 @@ import type { Db } from 'mongodb';
 import type {
   CreateWalkthroughInput,
   UpdateWalkthroughInput,
+  UserRole,
   Walkthrough,
   WalkthroughStep,
 } from '@mini-apty/shared';
@@ -58,29 +59,38 @@ export class WalkthroughService {
   async listByOriginAndPath(
     userId: string,
     origin: string,
-    path: string
+    path: string,
+    role: UserRole = 'author'
   ): Promise<Walkthrough[]> {
+    const query = role === 'admin' ? { origin } : { userId, origin };
     const docs = await this.collection()
-      .find({ userId, origin })
+      .find(query)
       .sort({ updatedAt: -1 })
       .toArray();
 
     return docs.filter((doc) => matchesPathPattern(path, doc.pathPattern)).map(mapDocument);
   }
 
-  async getById(userId: string, id: string): Promise<Walkthrough> {
+  async getById(userId: string, id: string, role: UserRole = 'author'): Promise<Walkthrough> {
     const doc = await this.collection().findOne({ _id: id });
 
     if (!doc) {
       throw new AppError(404, 'NOT_FOUND', 'Walkthrough not found');
     }
 
-    assertOwner(doc.userId, userId);
+    if (role !== 'admin') {
+      assertOwner(doc.userId, userId);
+    }
     return mapDocument(doc);
   }
 
-  async update(userId: string, id: string, input: UpdateWalkthroughInput): Promise<Walkthrough> {
-    const existing = await this.getById(userId, id);
+  async update(
+    userId: string,
+    id: string,
+    input: UpdateWalkthroughInput,
+    role: UserRole = 'author'
+  ): Promise<Walkthrough> {
+    const existing = await this.getById(userId, id, role);
 
     const updated: WalkthroughDocument = {
       _id: existing.id,
@@ -93,12 +103,14 @@ export class WalkthroughService {
       updatedAt: new Date(),
     };
 
-    await this.collection().replaceOne({ _id: id, userId }, updated);
+    const filter = role === 'admin' ? { _id: id } : { _id: id, userId };
+    await this.collection().replaceOne(filter, updated);
     return mapDocument(updated);
   }
 
-  async delete(userId: string, id: string): Promise<void> {
-    await this.getById(userId, id);
-    await this.collection().deleteOne({ _id: id, userId });
+  async delete(userId: string, id: string, role: UserRole = 'author'): Promise<void> {
+    await this.getById(userId, id, role);
+    const filter = role === 'admin' ? { _id: id } : { _id: id, userId };
+    await this.collection().deleteOne(filter);
   }
 }

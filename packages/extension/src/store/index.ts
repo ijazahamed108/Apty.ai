@@ -1,11 +1,11 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Walkthrough, WalkthroughStep } from '@mini-apty/shared';
+import type { UserRole, Walkthrough, WalkthroughStep } from '@mini-apty/shared';
 
 type AuthState = {
   token: string | null;
-  user: { id: string; email: string } | null;
-  setAuth: (token: string, user: { id: string; email: string }) => void;
+  user: { id: string; email: string; role: UserRole } | null;
+  setAuth: (token: string, user: { id: string; email: string; role: UserRole }) => void;
   logout: () => void;
 };
 

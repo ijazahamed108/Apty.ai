@@ -47,7 +47,9 @@ export function PopupApp() {
       ) : (
         <>
           <div className="card row" style={{ justifyContent: 'space-between' }}>
-            <span>{user.email}</span>
+            <span>
+              {user.email} · {user.role}
+            </span>
             <button type="button" className="secondary" onClick={logout}>
               Sign out
             </button>

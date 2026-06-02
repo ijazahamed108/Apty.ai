@@ -78,6 +78,24 @@ describe('WalkthroughService', () => {
     });
   });
 
+  it('getById allows admin to read a walkthrough owned by another user', async () => {
+    vi.mocked(walkthroughs.findOne).mockResolvedValueOnce({
+      _id: 'wt-1',
+      userId: 'other-user',
+      name: 'Login flow',
+      origin: 'https://example.com',
+      pathPattern: '/login',
+      steps: sampleSteps,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const result = await service.getById('admin-user', 'wt-1', 'admin');
+
+    expect(result.id).toBe('wt-1');
+    expect(result.userId).toBe('other-user');
+  });
+
   it('getById returns 404 when missing', async () => {
     vi.mocked(walkthroughs.findOne).mockResolvedValueOnce(null);
 
@@ -122,7 +140,38 @@ describe('WalkthroughService', () => {
       '/login/callback'
     );
 
+    expect(walkthroughs.find).toHaveBeenCalledWith({ userId: 'user-1', origin: 'https://example.com' });
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe('wt-1');
+  });
+
+  it('listByOriginAndPath allows admin to list across owners', async () => {
+    const now = new Date();
+    vi.mocked(walkthroughs.find).mockReturnValue({
+      sort: vi.fn().mockReturnValue({
+        toArray: vi.fn().mockResolvedValue([
+          {
+            _id: 'wt-1',
+            userId: 'user-1',
+            name: 'Login',
+            origin: 'https://example.com',
+            pathPattern: '/login',
+            steps: sampleSteps,
+            createdAt: now,
+            updatedAt: now,
+          },
+        ]),
+      }),
+    } as never);
+
+    const result = await service.listByOriginAndPath(
+      'admin-user',
+      'https://example.com',
+      '/login',
+      'admin'
+    );
+
+    expect(walkthroughs.find).toHaveBeenCalledWith({ origin: 'https://example.com' });
+    expect(result).toHaveLength(1);
   });
 });

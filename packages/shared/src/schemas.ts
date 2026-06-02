@@ -55,6 +55,9 @@ export const WalkthroughSchema = z.object({
 
 export type Walkthrough = z.infer<typeof WalkthroughSchema>;
 
+export const UserRoleSchema = z.enum(['author', 'admin']);
+export type UserRole = z.infer<typeof UserRoleSchema>;
+
 export const CreateWalkthroughSchema = z.object({
   name: z.string().min(1).max(200),
   origin: z.string().min(1),
@@ -86,6 +89,7 @@ export const AuthResponseSchema = z.object({
   user: z.object({
     id: z.string().uuid(),
     email: z.string().email(),
+    role: UserRoleSchema,
   }),
 });
 

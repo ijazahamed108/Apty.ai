@@ -4,6 +4,7 @@ import { COLLECTIONS } from './collections.js';
 export async function ensureIndexes(db: Db): Promise<void> {
   await db.collection(COLLECTIONS.users).createIndexes([
     { key: { email: 1 }, unique: true, name: 'users_email_unique' },
+    { key: { role: 1 }, name: 'users_role' },
   ]);
 
   await db.collection(COLLECTIONS.walkthroughs).createIndexes([

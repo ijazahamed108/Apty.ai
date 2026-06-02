@@ -1,4 +1,4 @@
-import type { WalkthroughStep } from '@mini-apty/shared';
+import type { UserRole, WalkthroughStep } from '@mini-apty/shared';
 
 export const COLLECTIONS = {
   users: 'users',
@@ -8,6 +8,7 @@ export const COLLECTIONS = {
 export type UserDocument = {
   _id: string;
   email: string;
+  role: UserRole;
   passwordHash: string;
   createdAt: Date;
 };

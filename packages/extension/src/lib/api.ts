@@ -1,9 +1,9 @@
-import type { Walkthrough, CreateWalkthroughInput } from '@mini-apty/shared';
+import type { Walkthrough, CreateWalkthroughInput, UserRole } from '@mini-apty/shared';
 import { apiFetch } from './api-client';
 
 export type AuthResult = {
   token: string;
-  user: { id: string; email: string };
+  user: { id: string; email: string; role: UserRole };
 };
 
 export async function signup(email: string, password: string): Promise<AuthResult> {
