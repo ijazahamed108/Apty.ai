@@ -49,10 +49,10 @@ If your password contains special characters (like `@`, `#`, `$`, etc.), you **m
 
 5. The `vercel.json` file configures:
    - Install: `npm install -g pnpm@9 && pnpm install --prod=false`
-   - Build: `pnpm --filter @mini-apty/shared build && pnpm --filter backend build`
-   - Serverless function: `api/index.ts` (Express API, no static site)
+   - Build: `pnpm run build:vercel` (compiles API **and generates `public/` output**)
+   - Serverless function: `api/index.ts` (Express API)
    
-   **Note:** `--prod=false` ensures devDependencies (TypeScript) are installed for build.
+   **Note:** Vercel clears the output directory before build. The `build:vercel` script writes `public/index.html` after compiling TypeScript — this is required when Output Directory is `public`.
 
 6. Set **Environment variables** (Production):
 
@@ -151,7 +151,7 @@ pnpm build:extension          # dist for Chrome
 | Issue | Fix |
 |-------|-----|
 | `No entrypoint found in output directory: "public"` | Set Framework to **Other**, ensure `public/index.html` exists, `framework: null` in vercel.json |
-| `No Output Directory named "public" found` | Ensure `public/` folder exists (included in repo) OR clear Output Directory in Vercel dashboard |
+| `No Output Directory named "public" found` | Build must **generate** `public/` — run `pnpm run build:vercel` locally to verify. Ensure Output Directory = `public` in dashboard. |
 | `tsc: command not found` during build | Ensure install command includes `--prod=false` (already in `vercel.json`/`render.yaml`) |
 | Vercel 500 on first request | Check Atlas IP allowlist and `MONGODB_URI` |
 | Extension can't reach API | Rebuild with correct `VITE_API_BASE_URL` |
