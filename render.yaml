@@ -1,0 +1,22 @@
+# Render.com free tier — https://render.com/docs/free
+# Connect repo → New Web Service → use this blueprint or set manually.
+
+services:
+  - type: web
+    name: mini-apty-api
+    runtime: node
+    plan: free
+    buildCommand: npm install -g pnpm@9 && pnpm install && pnpm --filter @mini-apty/shared build && pnpm --filter backend build
+    startCommand: node packages/backend/dist/index.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB
+        value: miniapty
+      - key: PORT
+        value: 10000

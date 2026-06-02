@@ -1,0 +1,21 @@
+services:
+  mongodb:
+    image: mongo:7
+    container_name: mini-apty-db
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: miniapty
+      MONGO_INITDB_ROOT_PASSWORD: miniapty
+      MONGO_INITDB_DATABASE: miniapty
+    ports:
+      - "27017:27017"
+    volumes:
+      - mini-apty-mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mini-apty-mongo-data:

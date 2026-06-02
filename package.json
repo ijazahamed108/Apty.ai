@@ -1,0 +1,23 @@
+{
+  "name": "mini-apty",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Mini Apty — MERN stack Chrome extension + API (TypeScript strict)",
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev:backend": "pnpm --filter backend dev",
+    "dev:extension": "pnpm --filter extension dev",
+    "build:backend": "pnpm --filter @mini-apty/shared build && pnpm --filter backend build",
+    "build:extension": "pnpm --filter @mini-apty/shared build && pnpm --filter extension build",
+    "test:backend": "pnpm --filter backend test",
+    "build": "pnpm build:backend && pnpm build:extension",
+    "test": "pnpm test:backend",
+    "start:backend": "node packages/backend/dist/index.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@vercel/node": "^5.1.14"
+  }
+}

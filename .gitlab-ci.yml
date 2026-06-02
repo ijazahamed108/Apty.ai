@@ -1,0 +1,96 @@
+image: node:20-bookworm
+
+variables:
+  PNPM_VERSION: "9.15.0"
+
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - .pnpm-store
+
+stages:
+  - test
+  - build
+  - deploy
+
+.default_setup: &default_setup
+  before_script:
+    - corepack enable
+    - corepack prepare pnpm@${PNPM_VERSION} --activate
+    - pnpm config set store-dir .pnpm-store
+    - pnpm install --frozen-lockfile=false
+
+test:backend:
+  stage: test
+  <<: *default_setup
+  script:
+    - pnpm --filter @mini-apty/shared build
+    - pnpm --filter backend test
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH
+
+build:extension:
+  stage: build
+  <<: *default_setup
+  variables:
+    VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3001}
+  script:
+    - pnpm --filter @mini-apty/shared build
+    - VITE_API_BASE_URL=$VITE_API_BASE_URL pnpm --filter extension build
+    - cd packages/extension/dist && zip -r ../../mini-apty-extension.zip .
+  artifacts:
+    name: mini-apty-extension-$CI_COMMIT_SHORT_SHA
+    expire_in: 30 days
+    paths:
+      - mini-apty-extension.zip
+      - packages/extension/dist/
+  rules:
+    - if: $CI_COMMIT_BRANCH
+
+pages:
+  stage: deploy
+  <<: *default_setup
+  script:
+    - mkdir -p public
+    - cp -r public-root/* public/ 2>/dev/null || true
+    - pnpm --filter @mini-apty/shared build
+    - pnpm --filter extension build
+    - mkdir -p public/extension
+    - cp -r packages/extension/dist/* public/extension/
+    - |
+      cat > public/index.html <<'HTML'
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Mini Apty</title>
+        <style>
+          body { font-family: system-ui, sans-serif; max-width: 720px; margin: 40px auto; padding: 0 16px; line-height: 1.5; }
+          code { background: #f3f4f6; padding: 2px 6px; border-radius: 4px; }
+          a { color: #2563eb; }
+        </style>
+      </head>
+      <body>
+        <h1>Mini Apty</h1>
+        <p>Digital Adoption Platform extension + API (MERN, TypeScript strict).</p>
+        <h2>Install extension</h2>
+        <ol>
+          <li>Download the <a href="../-/jobs/artifacts/file/mini-apty-extension.zip?job=build:extension">extension ZIP</a> from CI artifacts (or use <code>public/extension/</code> from GitLab Pages).</li>
+          <li>Unzip, open <code>chrome://extensions</code>, enable Developer mode, Load unpacked.</li>
+          <li>Set API URL in extension build env: <code>VITE_API_BASE_URL</code> → your deployed backend.</li>
+        </ol>
+        <h2>API</h2>
+        <p>Deploy backend to Vercel or Render. See <code>DEPLOYMENT.md</code> in the repo.</p>
+      </body>
+      </html>
+      HTML
+  artifacts:
+    paths:
+      - public
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  environment:
+    name: production
+    url: https://$CI_PROJECT_NAMESPACE.gitlab.io/$CI_PROJECT_NAME

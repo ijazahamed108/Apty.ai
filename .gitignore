@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.env
+.env.local
+*.log
+.DS_Store
+coverage/
+packages/extension/dist/
+*.zip
+mini-apty-extension.zip
+
+# No Python — this is a MERN (TypeScript/Node) project only
+.venv/
+__pycache__/
+*.pyc
