@@ -150,7 +150,8 @@ pnpm build:extension          # dist for Chrome
 
 | Issue | Fix |
 |-------|-----|
-| `No entrypoint found in output directory: "public"` | Vercel Dashboard → Settings → Build & Deployment → **Output Directory: leave blank**. Redeploy. |
+| `No entrypoint found in output directory: "public"` | Set Framework to **Other**, ensure `public/index.html` exists, `framework: null` in vercel.json |
+| `No Output Directory named "public" found` | Ensure `public/` folder exists (included in repo) OR clear Output Directory in Vercel dashboard |
 | `tsc: command not found` during build | Ensure install command includes `--prod=false` (already in `vercel.json`/`render.yaml`) |
 | Vercel 500 on first request | Check Atlas IP allowlist and `MONGODB_URI` |
 | Extension can't reach API | Rebuild with correct `VITE_API_BASE_URL` |
