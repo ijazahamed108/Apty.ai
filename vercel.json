@@ -4,7 +4,7 @@
   "name": "mini-apty",
   "installCommand": "npm install -g pnpm@9 && pnpm install --frozen-lockfile=false --prod=false",
   "buildCommand": "pnpm -w run build:vercel",
-  "outputDirectory": "packages/web/public",
+  "outputDirectory": "public",
   "framework": "vite",
   "rewrites": [
     { "source": "/health", "destination": "/api/health" },

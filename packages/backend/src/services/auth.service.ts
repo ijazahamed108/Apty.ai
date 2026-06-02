@@ -7,6 +7,8 @@ import { AppError } from '../lib/errors.js';
 import { COLLECTIONS, type UserDocument } from '../db/collections.js';
 
 const SALT_ROUNDS = 12;
+const PASSWORD_RESET_MESSAGE =
+  'If an account exists for this email, password reset instructions will be sent.';
 
 export type AuthUser = {
   id: string;
@@ -69,6 +71,21 @@ export class AuthService {
     const role = user.role ?? 'author';
     const token = this.signToken(user._id, user.email, role);
     return { token, user: { id: user._id, email: user.email, role } };
+  }
+
+  async requestPasswordReset(email: string): Promise<{ message: string }> {
+    const normalizedEmail = email.toLowerCase();
+
+    await this.db.collection<UserDocument>(COLLECTIONS.users).updateOne(
+      { email: normalizedEmail },
+      {
+        $set: {
+          passwordResetRequestedAt: new Date(),
+        },
+      }
+    );
+
+    return { message: PASSWORD_RESET_MESSAGE };
   }
 
   private signToken(userId: string, email: string, role: UserRole): string {

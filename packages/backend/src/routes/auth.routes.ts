@@ -1,5 +1,5 @@
 import { Router, type IRouter, Request, Response, NextFunction } from 'express';
-import { LoginSchema, SignupSchema } from '@mini-apty/shared';
+import { ForgotPasswordSchema, LoginSchema, SignupSchema } from '@mini-apty/shared';
 import { AuthService } from '../services/auth.service.js';
 import { validate } from '../middleware/validate.middleware.js';
 
@@ -28,6 +28,21 @@ authRouter.post(
       const { email, password } = req.body as { email: string; password: string };
       const service = new AuthService(req.app.locals.db, req.app.locals.jwtSecret);
       const result = await service.login(email, password);
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+authRouter.post(
+  '/forgot-password',
+  validate(ForgotPasswordSchema),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { email } = req.body as { email: string };
+      const service = new AuthService(req.app.locals.db, req.app.locals.jwtSecret);
+      const result = await service.requestPasswordReset(email);
       res.json(result);
     } catch (err) {
       next(err);

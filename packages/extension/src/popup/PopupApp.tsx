@@ -13,6 +13,7 @@ export function PopupApp() {
   const { token, user, logout } = useAuthStore();
   const [tab, setTab] = useState<TabContext | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [tabError, setTabError] = useState<string | null>(null);
 
   useEffect(() => {
     void chrome.tabs.query({ active: true, currentWindow: true }).then(([activeTab]) => {
@@ -29,9 +30,17 @@ export function PopupApp() {
   }, []);
 
   async function startPreview(walkthroughId: string) {
+    setTabError(null);
     const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (activeTab?.id) {
+    if (!activeTab?.id) {
+      setTabError('No active tab found for preview.');
+      return;
+    }
+
+    try {
       await chrome.tabs.sendMessage(activeTab.id, { type: 'START_PREVIEW', walkthroughId });
+    } catch {
+      setTabError('Could not reach the page. Refresh the tab and try preview again.');
     }
   }
 
@@ -61,6 +70,7 @@ export function PopupApp() {
                 Page: {tab.origin}
                 {tab.path}
               </p>
+              {tabError && <div className="error">{tabError}</div>}
               <AuthorPanel
                 origin={tab.origin}
                 path={tab.path}

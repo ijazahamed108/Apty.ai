@@ -32,10 +32,19 @@ export function AuthorPanel({ origin, path, onSaved }: Props) {
 
   async function toggleRecording() {
     const next = !isRecording;
-    setRecording(next);
+    setError(null);
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (tab?.id) {
+
+    if (!tab?.id) {
+      setError('No active tab found. Open an http(s) page and try again.');
+      return;
+    }
+
+    try {
       await chrome.tabs.sendMessage(tab.id, { type: next ? 'START_AUTHOR' : 'STOP_AUTHOR' });
+      setRecording(next);
+    } catch {
+      setError('Could not reach the page. Refresh the tab and try recording again.');
     }
   }
 
@@ -77,6 +86,7 @@ export function AuthorPanel({ origin, path, onSaved }: Props) {
           ? 'Click elements on the page to capture steps.'
           : 'Start recording, then click targets on the active tab.'}
       </p>
+      {error && <div className="error">{error}</div>}
 
       {steps.length > 0 && (
         <>
@@ -99,7 +109,6 @@ export function AuthorPanel({ origin, path, onSaved }: Props) {
               />
             ))}
           </div>
-          {error && <div className="error">{error}</div>}
           <button type="button" onClick={() => void save()} disabled={saving}>
             {saving ? 'Saving…' : 'Save walkthrough'}
           </button>

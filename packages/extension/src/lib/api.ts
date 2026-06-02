@@ -20,6 +20,13 @@ export async function login(email: string, password: string): Promise<AuthResult
   });
 }
 
+export async function forgotPassword(email: string): Promise<{ message: string }> {
+  return apiFetch<{ message: string }>('/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+}
+
 export async function listWalkthroughs(
   token: string,
   origin: string,

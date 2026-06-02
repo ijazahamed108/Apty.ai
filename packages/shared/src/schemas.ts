@@ -84,6 +84,12 @@ export const SignupSchema = z.object({
 
 export const LoginSchema = SignupSchema;
 
+export const ForgotPasswordSchema = z.object({
+  email: z.string().email(),
+});
+
+export type ForgotPasswordInput = z.infer<typeof ForgotPasswordSchema>;
+
 export const AuthResponseSchema = z.object({
   token: z.string(),
   user: z.object({

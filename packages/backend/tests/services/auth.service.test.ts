@@ -10,6 +10,7 @@ function createMockCollection<T>() {
   return {
     findOne: vi.fn(),
     insertOne: vi.fn(),
+    updateOne: vi.fn(),
   } as unknown as Collection<T>;
 }
 
@@ -105,6 +106,22 @@ describe('AuthService', () => {
 
     await expect(service.login('missing@example.com', 'password123')).rejects.toBeInstanceOf(
       AppError
+    );
+  });
+
+  it('requestPasswordReset returns a generic message and records request timestamp', async () => {
+    vi.mocked(users.updateOne).mockResolvedValueOnce({ acknowledged: true } as never);
+
+    const result = await service.requestPasswordReset('Test@Example.com');
+
+    expect(result.message).toContain('If an account exists');
+    expect(users.updateOne).toHaveBeenCalledWith(
+      { email: 'test@example.com' },
+      {
+        $set: {
+          passwordResetRequestedAt: expect.any(Date),
+        },
+      }
     );
   });
 });

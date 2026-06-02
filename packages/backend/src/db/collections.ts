@@ -10,6 +10,7 @@ export type UserDocument = {
   email: string;
   role: UserRole;
   passwordHash: string;
+  passwordResetRequestedAt?: Date;
   createdAt: Date;
 };
 
