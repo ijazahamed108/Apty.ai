@@ -9,7 +9,7 @@ import type {
 } from '@mini-apty/shared';
 import { COLLECTIONS, type WalkthroughDocument } from '../db/collections.js';
 import { AppError, assertOwner } from '../lib/errors.js';
-import { matchesPathPattern } from '../lib/path-pattern.js';
+import { matchesPathPattern, normalizeOrigin } from '../lib/path-pattern.js';
 
 function mapDocument(doc: WalkthroughDocument): Walkthrough {
   return {
@@ -45,7 +45,7 @@ export class WalkthroughService {
       _id: randomUUID(),
       userId,
       name: input.name,
-      origin: input.origin,
+      origin: normalizeOrigin(input.origin),
       pathPattern: input.pathPattern,
       steps: normalizeSteps(input.steps),
       createdAt: now,
@@ -59,16 +59,20 @@ export class WalkthroughService {
   async listByOriginAndPath(
     userId: string,
     origin: string,
-    path: string,
+    path: string | undefined,
     role: UserRole = 'author'
   ): Promise<Walkthrough[]> {
-    const query = role === 'admin' ? { origin } : { userId, origin };
+    const normalizedOrigin = normalizeOrigin(origin);
+    const query = role === 'admin' ? {} : { userId };
     const docs = await this.collection()
       .find(query)
       .sort({ updatedAt: -1 })
       .toArray();
 
-    return docs.filter((doc) => matchesPathPattern(path, doc.pathPattern)).map(mapDocument);
+    return docs
+      .filter((doc) => normalizeOrigin(doc.origin) === normalizedOrigin)
+      .filter((doc) => path === undefined || matchesPathPattern(path, doc.pathPattern))
+      .map(mapDocument);
   }
 
   async getById(userId: string, id: string, role: UserRole = 'author'): Promise<Walkthrough> {

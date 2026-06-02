@@ -12,7 +12,7 @@ walkthroughRouter.use(authenticate, requireRole('author', 'admin'));
 
 const listQuerySchema = z.object({
   origin: z.string().min(1),
-  path: z.string().min(1),
+  path: z.string().optional(),
 });
 
 walkthroughRouter.post(

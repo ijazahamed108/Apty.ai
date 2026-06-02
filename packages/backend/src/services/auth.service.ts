@@ -7,8 +7,7 @@ import { AppError } from '../lib/errors.js';
 import { COLLECTIONS, type UserDocument } from '../db/collections.js';
 
 const SALT_ROUNDS = 12;
-const PASSWORD_RESET_MESSAGE =
-  'If an account exists for this email, password reset instructions will be sent.';
+const PASSWORD_RESET_SUCCESS_MESSAGE = 'Password updated. You can sign in with your new password.';
 
 export type AuthUser = {
   id: string;
@@ -73,19 +72,25 @@ export class AuthService {
     return { token, user: { id: user._id, email: user.email, role } };
   }
 
-  async requestPasswordReset(email: string): Promise<{ message: string }> {
+  async resetPassword(email: string, password: string): Promise<{ message: string }> {
     const normalizedEmail = email.toLowerCase();
+    const users = this.db.collection<UserDocument>(COLLECTIONS.users);
+    const user = await users.findOne({ email: normalizedEmail }, { projection: { _id: 1 } });
 
-    await this.db.collection<UserDocument>(COLLECTIONS.users).updateOne(
+    if (!user) {
+      throw new AppError(404, 'USER_NOT_FOUND', 'No account found for this email');
+    }
+
+    const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+    await users.updateOne(
       { email: normalizedEmail },
       {
-        $set: {
-          passwordResetRequestedAt: new Date(),
-        },
+        $set: { passwordHash },
+        $unset: { passwordResetRequestedAt: '' },
       }
     );
 
-    return { message: PASSWORD_RESET_MESSAGE };
+    return { message: PASSWORD_RESET_SUCCESS_MESSAGE };
   }
 
   private signToken(userId: string, email: string, role: UserRole): string {

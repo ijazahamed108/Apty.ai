@@ -22,9 +22,10 @@ export function AuthForm() {
     setLoading(true);
     try {
       if (mode === 'forgot') {
-        const result = await forgotPassword(email);
+        const result = await forgotPassword(email, password);
         setSuccess(result.message);
         setPassword('');
+        setMode('login');
         return;
       }
 
@@ -56,30 +57,28 @@ export function AuthForm() {
         Email
         <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
       </label>
-      {mode !== 'forgot' && (
-        <label>
-          Password
-          <span className="password-field">
-            <input
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={8}
-            />
-            <button
-              type="button"
-              className="icon-button"
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
-              onClick={() => setShowPassword((value) => !value)}
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 5c5.2 0 8.5 4.4 9.5 6.3.2.4.2.9 0 1.3C20.5 14.6 17.2 19 12 19s-8.5-4.4-9.5-6.3a1.4 1.4 0 0 1 0-1.3C3.5 9.4 6.8 5 12 5Zm0 2c-4 0-6.7 3.3-7.5 5 .8 1.7 3.5 5 7.5 5s6.7-3.3 7.5-5C18.7 10.3 16 7 12 7Zm0 2.5A2.5 2.5 0 1 1 12 14a2.5 2.5 0 0 1 0-5Z" />
-              </svg>
-            </button>
-          </span>
-        </label>
-      )}
+      <label>
+        {mode === 'forgot' ? 'New password' : 'Password'}
+        <span className="password-field">
+          <input
+            type={showPassword ? 'text' : 'password'}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            minLength={8}
+          />
+          <button
+            type="button"
+            className="icon-button"
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
+            onClick={() => setShowPassword((value) => !value)}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 5c5.2 0 8.5 4.4 9.5 6.3.2.4.2.9 0 1.3C20.5 14.6 17.2 19 12 19s-8.5-4.4-9.5-6.3a1.4 1.4 0 0 1 0-1.3C3.5 9.4 6.8 5 12 5Zm0 2c-4 0-6.7 3.3-7.5 5 .8 1.7 3.5 5 7.5 5s6.7-3.3 7.5-5C18.7 10.3 16 7 12 7Zm0 2.5A2.5 2.5 0 1 1 12 14a2.5 2.5 0 0 1 0-5Z" />
+            </svg>
+          </button>
+        </span>
+      </label>
       <button type="submit" disabled={loading}>
         {loading
           ? 'Please wait…'
@@ -87,19 +86,35 @@ export function AuthForm() {
             ? 'Sign in'
             : mode === 'signup'
               ? 'Sign up'
-              : 'Send reset link'}
+              : 'Reset password'}
       </button>
-      <button
-        type="button"
-        className="secondary"
-        onClick={() => {
-          setMode(mode === 'login' ? 'signup' : 'login');
-          setError(null);
-          setSuccess(null);
-        }}
-      >
-        {mode === 'login' ? 'Need an account? Sign up' : 'Already have an account? Sign in'}
-      </button>
+      {mode !== 'forgot' && (
+        <button
+          type="button"
+          className="secondary"
+          onClick={() => {
+            setMode(mode === 'login' ? 'signup' : 'login');
+            setError(null);
+            setSuccess(null);
+          }}
+        >
+          {mode === 'login' ? 'Need an account? Sign up' : 'Already have an account? Sign in'}
+        </button>
+      )}
+      {mode === 'forgot' && (
+        <button
+          type="button"
+          className="secondary"
+          onClick={() => {
+            setMode('login');
+            setError(null);
+            setSuccess(null);
+            setPassword('');
+          }}
+        >
+          Back to sign in
+        </button>
+      )}
       {mode === 'login' && (
         <button
           type="button"

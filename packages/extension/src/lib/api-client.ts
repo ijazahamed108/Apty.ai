@@ -47,7 +47,7 @@ export async function apiFetch<T>(
     if (response.status === 401) {
       throw new NormalizedApiError('auth', message, code, response.status);
     }
-    if (response.status === 400 || response.status === 409) {
+    if (response.status === 400 || response.status === 409 || response.status === 404) {
       throw new NormalizedApiError('validation', message, code, response.status);
     }
     throw new NormalizedApiError('unknown', message, code, response.status);

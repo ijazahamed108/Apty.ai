@@ -109,19 +109,28 @@ describe('AuthService', () => {
     );
   });
 
-  it('requestPasswordReset returns a generic message and records request timestamp', async () => {
+  it('resetPassword updates hash for existing user', async () => {
+    vi.mocked(users.findOne).mockResolvedValueOnce({ _id: 'user-1' } as UserDocument);
     vi.mocked(users.updateOne).mockResolvedValueOnce({ acknowledged: true } as never);
 
-    const result = await service.requestPasswordReset('Test@Example.com');
+    const result = await service.resetPassword('Test@Example.com', 'newpassword123');
 
-    expect(result.message).toContain('If an account exists');
+    expect(result.message).toContain('Password updated');
     expect(users.updateOne).toHaveBeenCalledWith(
       { email: 'test@example.com' },
       {
-        $set: {
-          passwordResetRequestedAt: expect.any(Date),
-        },
+        $set: { passwordHash: expect.any(String) },
+        $unset: { passwordResetRequestedAt: '' },
       }
     );
+  });
+
+  it('resetPassword rejects unknown email', async () => {
+    vi.mocked(users.findOne).mockResolvedValueOnce(null);
+
+    await expect(service.resetPassword('missing@example.com', 'newpassword123')).rejects.toMatchObject({
+      statusCode: 404,
+      code: 'USER_NOT_FOUND',
+    });
   });
 });

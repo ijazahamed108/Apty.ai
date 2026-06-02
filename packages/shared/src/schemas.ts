@@ -86,6 +86,7 @@ export const LoginSchema = SignupSchema;
 
 export const ForgotPasswordSchema = z.object({
   email: z.string().email(),
+  password: z.string().min(8).max(128),
 });
 
 export type ForgotPasswordInput = z.infer<typeof ForgotPasswordSchema>;

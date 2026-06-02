@@ -182,4 +182,4 @@ The hardest decision was how much targeting logic to build for a small challenge
 - Walk through selector fallback order and MutationObserver behavior.
 - Show 401 vs 403 behavior and RBAC owner/admin difference.
 - Explain MongoDB connection reuse for Vercel/serverless.
-- Call out limitations: no queued writes, password reset is request-only without email provider, and DOM targeting is heuristic rather than guaranteed.
+- Call out limitations: no queued writes, password reset is demo-only (email + new password, no verification email), and DOM targeting is heuristic rather than guaranteed.

@@ -1,4 +1,9 @@
 import { useEffect, useState } from 'react';
+import {
+  getActiveInjectableTab,
+  sendTabMessage,
+  TabMessagingError,
+} from '../lib/tab-messaging';
 import { useAuthStore } from '../store';
 import { AuthForm } from './components/AuthForm';
 import { AuthorPanel } from './components/AuthorPanel';
@@ -31,16 +36,22 @@ export function PopupApp() {
 
   async function startPreview(walkthroughId: string) {
     setTabError(null);
-    const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!activeTab?.id) {
-      setTabError('No active tab found for preview.');
-      return;
-    }
 
     try {
-      await chrome.tabs.sendMessage(activeTab.id, { type: 'START_PREVIEW', walkthroughId });
-    } catch {
-      setTabError('Could not reach the page. Refresh the tab and try preview again.');
+      const tab = await getActiveInjectableTab();
+      const response = await sendTabMessage<{ ok: boolean; error?: string }>(tab.id!, {
+        type: 'START_PREVIEW',
+        walkthroughId,
+      });
+      if (!response?.ok) {
+        setTabError(response?.error ?? 'Preview failed to start.');
+      }
+    } catch (err) {
+      setTabError(
+        err instanceof TabMessagingError
+          ? err.message
+          : 'Could not reach the page. Refresh the tab and try preview again.'
+      );
     }
   }
 

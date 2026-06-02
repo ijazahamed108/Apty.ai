@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { Walkthrough } from '@mini-apty/shared';
+import { matchesPathPattern } from '@mini-apty/shared';
 import { listWalkthroughs, deleteWalkthrough } from '../../lib/api';
 import { NormalizedApiError } from '../../lib/api-client';
 import { cacheWalkthroughs } from '../../lib/storage';
@@ -17,31 +18,26 @@ export function WalkthroughList({ origin, path, onPreview }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     if (!token) return;
 
-    let cancelled = false;
     setLoading(true);
-    listWalkthroughs(token, origin, path)
-      .then((data) => {
-        if (!cancelled) {
-          setItems(data);
-          void cacheWalkthroughs(data);
-        }
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) {
-          setError(err instanceof NormalizedApiError ? err.message : 'Failed to load walkthroughs');
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+    setError(null);
+    try {
+      const data = await listWalkthroughs(token, origin);
+      setItems(data);
+      await cacheWalkthroughs(data);
+    } catch (err: unknown) {
+      setError(err instanceof NormalizedApiError ? err.message : 'Failed to load walkthroughs');
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [token, origin]);
 
-    return () => {
-      cancelled = true;
-    };
-  }, [token, origin, path]);
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   async function handleDelete(id: string) {
     if (!token) return;
@@ -51,24 +47,82 @@ export function WalkthroughList({ origin, path, onPreview }: Props) {
 
   if (loading) return <p className="muted">Loading walkthroughs…</p>;
   if (error) return <div className="error">{error}</div>;
-  if (items.length === 0) return <p className="muted">No walkthroughs for this page yet.</p>;
+  if (items.length === 0) {
+    return (
+      <p className="muted">
+        No walkthroughs saved for this site yet ({origin}).
+      </p>
+    );
+  }
+
+  const matching = items.filter((wt) => matchesPathPattern(path, wt.pathPattern));
+  const other = items.filter((wt) => !matchesPathPattern(path, wt.pathPattern));
 
   return (
-    <ul className="list">
-      {items.map((wt) => (
-        <li key={wt.id} className="list-item stack">
-          <strong>{wt.name}</strong>
-          <span className="muted">{wt.steps.length} steps · {wt.pathPattern}</span>
-          <div className="row">
-            <button type="button" onClick={() => onPreview(wt.id)}>
-              Preview
-            </button>
-            <button type="button" className="danger" onClick={() => void handleDelete(wt.id)}>
-              Delete
-            </button>
-          </div>
-        </li>
-      ))}
-    </ul>
+    <div className="stack">
+      <button type="button" className="secondary" onClick={() => void load()}>
+        Refresh list
+      </button>
+
+      {matching.length > 0 && (
+        <WalkthroughGroup
+          title="On this page"
+          items={matching}
+          onPreview={onPreview}
+          onDelete={(id) => void handleDelete(id)}
+        />
+      )}
+
+      {other.length > 0 && (
+        <WalkthroughGroup
+          title="Other paths on this site"
+          items={other}
+          onPreview={onPreview}
+          onDelete={(id) => void handleDelete(id)}
+          showPathHint
+        />
+      )}
+    </div>
+  );
+}
+
+function WalkthroughGroup({
+  title,
+  items,
+  onPreview,
+  onDelete,
+  showPathHint = false,
+}: {
+  title: string;
+  items: Walkthrough[];
+  onPreview: (id: string) => void;
+  onDelete: (id: string) => void;
+  showPathHint?: boolean;
+}) {
+  return (
+    <div className="stack">
+      <h3 style={{ margin: 0, fontSize: '0.9rem' }}>{title}</h3>
+      <ul className="list">
+        {items.map((wt) => (
+          <li key={wt.id} className="list-item stack">
+            <strong>{wt.name}</strong>
+            <span className="muted">
+              {wt.steps.length} steps · path: {wt.pathPattern}
+            </span>
+            {showPathHint && (
+              <span className="muted">Navigate to a matching path to preview reliably.</span>
+            )}
+            <div className="row">
+              <button type="button" onClick={() => onPreview(wt.id)}>
+                Preview
+              </button>
+              <button type="button" className="danger" onClick={() => onDelete(wt.id)}>
+                Delete
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

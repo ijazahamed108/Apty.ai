@@ -40,9 +40,9 @@ authRouter.post(
   validate(ForgotPasswordSchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { email } = req.body as { email: string };
+      const { email, password } = req.body as { email: string; password: string };
       const service = new AuthService(req.app.locals.db, req.app.locals.jwtSecret);
-      const result = await service.requestPasswordReset(email);
+      const result = await service.resetPassword(email, password);
       res.json(result);
     } catch (err) {
       next(err);

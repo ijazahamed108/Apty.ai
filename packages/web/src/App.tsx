@@ -2,23 +2,44 @@ import { useState } from 'react';
 
 type HealthState = 'idle' | 'loading' | 'ok' | 'error';
 
+function resolveHealthUrl(): string {
+  if (import.meta.env.PROD) {
+    return '/api/health';
+  }
+
+  const base = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '');
+  if (base) {
+    return `${base}/health`;
+  }
+  return '/api/health';
+}
+
+function formatFetchError(error: unknown, healthUrl: string): string {
+  const message = error instanceof Error ? error.message : 'Unable to reach API';
+  if (message === 'Failed to fetch') {
+    return `Cannot reach ${healthUrl}. Start the backend (pnpm dev:backend). If you use the web UI locally, also run pnpm dev:web — or verify with curl ${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3001'}/health`;
+  }
+  return message;
+}
+
 export function App() {
   const [healthState, setHealthState] = useState<HealthState>('idle');
   const [message, setMessage] = useState('Click the health check to verify the live Express API.');
 
   const checkHealth = async () => {
+    const healthUrl = resolveHealthUrl();
     setHealthState('loading');
-    setMessage('Checking /api/health...');
+    setMessage(`Checking ${healthUrl}...`);
 
     try {
-      const response = await fetch('/api/health');
+      const response = await fetch(healthUrl);
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
 
       const contentType = response.headers.get('content-type') ?? '';
       if (!contentType.includes('application/json')) {
-        throw new Error('API returned non-JSON response');
+        throw new Error('API returned non-JSON response (often a missing /api proxy on this host)');
       }
 
       const data = (await response.json()) as { status: string; service: string };
@@ -26,7 +47,7 @@ export function App() {
       setMessage(`${data.service} is ${data.status}`);
     } catch (error) {
       setHealthState('error');
-      setMessage(error instanceof Error ? error.message : 'Unable to reach API');
+      setMessage(formatFetchError(error, healthUrl));
     }
   };
 
@@ -60,7 +81,7 @@ export function App() {
           <h2>Express API</h2>
           <p>
             Serverless routes handle <code>/auth/*</code>, <code>/walkthroughs/*</code>, and{' '}
-            <code>/api/health</code> using the same backend as local development.
+            <code>/health</code> using the same backend as local development.
           </p>
         </article>
         <article>

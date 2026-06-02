@@ -140,7 +140,7 @@ describe('WalkthroughService', () => {
       '/login/callback'
     );
 
-    expect(walkthroughs.find).toHaveBeenCalledWith({ userId: 'user-1', origin: 'https://example.com' });
+    expect(walkthroughs.find).toHaveBeenCalledWith({ userId: 'user-1' });
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe('wt-1');
   });
@@ -171,7 +171,7 @@ describe('WalkthroughService', () => {
       'admin'
     );
 
-    expect(walkthroughs.find).toHaveBeenCalledWith({ origin: 'https://example.com' });
+    expect(walkthroughs.find).toHaveBeenCalledWith({});
     expect(result).toHaveLength(1);
   });
 });

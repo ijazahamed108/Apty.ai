@@ -20,19 +20,18 @@ export async function login(email: string, password: string): Promise<AuthResult
   });
 }
 
-export async function forgotPassword(email: string): Promise<{ message: string }> {
+export async function forgotPassword(
+  email: string,
+  password: string
+): Promise<{ message: string }> {
   return apiFetch<{ message: string }>('/auth/forgot-password', {
     method: 'POST',
-    body: JSON.stringify({ email }),
+    body: JSON.stringify({ email, password }),
   });
 }
 
-export async function listWalkthroughs(
-  token: string,
-  origin: string,
-  path: string
-): Promise<Walkthrough[]> {
-  const params = new URLSearchParams({ origin, path });
+export async function listWalkthroughs(token: string, origin: string): Promise<Walkthrough[]> {
+  const params = new URLSearchParams({ origin });
   return apiFetch<Walkthrough[]>(`/walkthroughs?${params}`, { token });
 }
 

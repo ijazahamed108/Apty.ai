@@ -5,8 +5,8 @@
   "description": "Mini Apty — MERN stack Chrome extension + API (TypeScript strict)",
   "packageManager": "pnpm@9.15.0",
   "scripts": {
-    "dev:backend": "pnpm --filter backend dev",
-    "dev:extension": "pnpm --filter extension dev",
+    "dev:backend": "pnpm --filter @mini-apty/shared build && pnpm --filter backend dev",
+    "dev:extension": "pnpm --filter @mini-apty/shared build && pnpm --filter extension dev",
     "dev:web": "pnpm --filter web dev",
     "build:backend": "pnpm --filter @mini-apty/shared build && pnpm --filter backend build",
     "build:web": "pnpm --filter web build",

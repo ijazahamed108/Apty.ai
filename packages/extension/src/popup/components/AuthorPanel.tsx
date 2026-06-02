@@ -1,7 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { WalkthroughStep } from '@mini-apty/shared';
 import { createWalkthrough } from '../../lib/api';
 import { NormalizedApiError } from '../../lib/api-client';
+import {
+  AUTHOR_DRAFT_KEY,
+  clearAuthorDraft,
+  readAuthorDraft,
+  updateAuthorDraft,
+  writeAuthorDraft,
+  type AuthorDraft,
+} from '../../lib/author-draft';
+import { getActiveInjectableTab, sendTabMessage, TabMessagingError } from '../../lib/tab-messaging';
 import { cacheWalkthrough } from '../../lib/storage';
 import { CreateWalkthroughSchema } from '@mini-apty/shared';
 import { useAuthStore, useAuthorStore } from '../../store';
@@ -12,13 +21,70 @@ type Props = {
   onSaved: () => void;
 };
 
-export function AuthorPanel({ origin, path, onSaved }: Props) {
+export function AuthorPanel({ origin, path: currentPath, onSaved }: Props) {
   const token = useAuthStore((s) => s.token);
-  const { isRecording, steps, setRecording, addStep, updateStep, removeStep, clear } = useAuthorStore();
+  const { isRecording, steps, setRecording, hydrate, addStep, setSteps, clear } = useAuthorStore();
   const [name, setName] = useState('');
-  const [pathPattern, setPathPattern] = useState(path);
+  const [pathPattern, setPathPattern] = useState('*');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const applyDraft = useCallback(
+    (draft: AuthorDraft) => {
+      hydrate({ isRecording: draft.isRecording, steps: draft.steps });
+      if (draft.name) setName(draft.name);
+      if (draft.pathPattern) setPathPattern(draft.pathPattern);
+    },
+    [hydrate]
+  );
+
+  const persistDraft = useCallback(
+    async (patch: Partial<AuthorDraft>) => {
+      const draft = await updateAuthorDraft({
+        origin,
+        pathPattern,
+        name,
+        ...patch,
+      });
+      applyDraft(draft);
+    },
+    [applyDraft, name, origin, pathPattern]
+  );
+
+  useEffect(() => {
+    void readAuthorDraft().then(async (draft) => {
+      applyDraft(draft);
+
+      if (!draft.isRecording) return;
+
+      try {
+        const tab = await getActiveInjectableTab();
+        const status = await sendTabMessage<{ active?: boolean }>(tab.id!, {
+          type: 'GET_AUTHOR_STATUS',
+        });
+        if (!status?.active) {
+          const updated = await updateAuthorDraft({ isRecording: false });
+          applyDraft(updated);
+        }
+      } catch {
+        const updated = await updateAuthorDraft({ isRecording: false });
+        applyDraft(updated);
+      }
+    });
+  }, [applyDraft]);
+
+  useEffect(() => {
+    function onStorageChange(
+      changes: Record<string, chrome.storage.StorageChange>,
+      area: string
+    ) {
+      if (area !== 'local' || !changes[AUTHOR_DRAFT_KEY]) return;
+      const draft = changes[AUTHOR_DRAFT_KEY].newValue as AuthorDraft | undefined;
+      if (draft) applyDraft(draft);
+    }
+    chrome.storage.onChanged.addListener(onStorageChange);
+    return () => chrome.storage.onChanged.removeListener(onStorageChange);
+  }, [applyDraft]);
 
   useEffect(() => {
     function onMessage(message: { type?: string; step?: WalkthroughStep }) {
@@ -33,19 +99,43 @@ export function AuthorPanel({ origin, path, onSaved }: Props) {
   async function toggleRecording() {
     const next = !isRecording;
     setError(null);
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-
-    if (!tab?.id) {
-      setError('No active tab found. Open an http(s) page and try again.');
-      return;
-    }
-
     try {
-      await chrome.tabs.sendMessage(tab.id, { type: next ? 'START_AUTHOR' : 'STOP_AUTHOR' });
+      const tab = await getActiveInjectableTab();
+      await sendTabMessage(tab.id!, { type: next ? 'START_AUTHOR' : 'STOP_AUTHOR' });
+      if (next) {
+        await writeAuthorDraft({
+          isRecording: true,
+          steps: [],
+          origin,
+          pathPattern,
+          name,
+        });
+        hydrate({ isRecording: true, steps: [] });
+      } else {
+        await persistDraft({ isRecording: false });
+      }
       setRecording(next);
-    } catch {
-      setError('Could not reach the page. Refresh the tab and try recording again.');
+    } catch (err) {
+      setError(
+        err instanceof TabMessagingError
+          ? err.message
+          : 'Could not reach the page. Refresh the tab and try recording again.'
+      );
     }
+  }
+
+  async function handleRemoveStep(id: string) {
+    const nextSteps = steps
+      .filter((step) => step.id !== id)
+      .map((step, index) => ({ ...step, order: index }));
+    setSteps(nextSteps);
+    await persistDraft({ steps: nextSteps });
+  }
+
+  async function handleUpdateStep(id: string, patch: Partial<WalkthroughStep>) {
+    const nextSteps = steps.map((step) => (step.id === id ? { ...step, ...patch } : step));
+    setSteps(nextSteps);
+    await persistDraft({ steps: nextSteps });
   }
 
   async function save() {
@@ -62,6 +152,7 @@ export function AuthorPanel({ origin, path, onSaved }: Props) {
       CreateWalkthroughSchema.parse(payload);
       const saved = await createWalkthrough(token, payload);
       await cacheWalkthrough(saved);
+      await clearAuthorDraft();
       clear();
       setName('');
       onSaved();
@@ -83,7 +174,7 @@ export function AuthorPanel({ origin, path, onSaved }: Props) {
       </button>
       <p className="muted">
         {isRecording
-          ? 'Click elements on the page to capture steps.'
+          ? 'Click elements on the page to capture steps. The popup closes when you click the page — reopen it to review and save.'
           : 'Start recording, then click targets on the active tab.'}
       </p>
       {error && <div className="error">{error}</div>}
@@ -92,11 +183,25 @@ export function AuthorPanel({ origin, path, onSaved }: Props) {
         <>
           <label>
             Walkthrough name
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="My flow" />
+            <input
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+                void persistDraft({ name: e.target.value });
+              }}
+              placeholder="My flow"
+            />
           </label>
           <label>
             Path pattern
-            <input value={pathPattern} onChange={(e) => setPathPattern(e.target.value)} />
+            <input
+              value={pathPattern}
+              onChange={(e) => {
+                setPathPattern(e.target.value);
+                void persistDraft({ pathPattern: e.target.value });
+              }}
+              placeholder={`* = all paths (current: ${currentPath})`}
+            />
           </label>
           <div className="stack">
             {steps.map((step, index) => (
@@ -104,8 +209,8 @@ export function AuthorPanel({ origin, path, onSaved }: Props) {
                 key={step.id}
                 step={step}
                 index={index}
-                onChange={(patch) => updateStep(step.id, patch)}
-                onRemove={() => removeStep(step.id)}
+                onChange={(patch) => void handleUpdateStep(step.id, patch)}
+                onRemove={() => void handleRemoveStep(step.id)}
               />
             ))}
           </div>
