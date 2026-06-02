@@ -42,13 +42,19 @@ If your password contains special characters (like `@`, `#`, `$`, etc.), you **m
 1. Push repo to **GitHub** or **GitLab** and import in [vercel.com](https://vercel.com).
 2. Framework preset: **Other**.
 3. Root directory: repository root (monorepo).
-4. The `vercel.json` file auto-configures:
+4. **Critical — Vercel project settings** (Settings → Build & Deployment):
+   - **Output Directory:** leave **blank** (do not set `public`)
+   - **Framework Preset:** Other
+   - Install/build commands are read from `vercel.json` automatically
+
+5. The `vercel.json` file configures:
    - Install: `npm install -g pnpm@9 && pnpm install --prod=false`
    - Build: `pnpm --filter @mini-apty/shared build && pnpm --filter backend build`
+   - Serverless function: `api/index.ts` (Express API, no static site)
    
    **Note:** `--prod=false` ensures devDependencies (TypeScript) are installed for build.
 
-5. Set **Environment variables** (Production):
+6. Set **Environment variables** (Production):
 
    | Variable | Example |
    |----------|---------|
@@ -59,11 +65,10 @@ If your password contains special characters (like `@`, `#`, `$`, etc.), you **m
    | `CORS_ORIGIN` | `*` or your domain |
 
 7. Deploy. API routes:
+   - `https://YOUR_PROJECT.vercel.app/` — landing page
    - `https://YOUR_PROJECT.vercel.app/health`
    - `https://YOUR_PROJECT.vercel.app/auth/signup`
    - `https://YOUR_PROJECT.vercel.app/walkthroughs`
-
-The landing page is served from `public/index.html`.
 
 ---
 
@@ -145,6 +150,7 @@ pnpm build:extension          # dist for Chrome
 
 | Issue | Fix |
 |-------|-----|
+| `No entrypoint found in output directory: "public"` | Vercel Dashboard → Settings → Build & Deployment → **Output Directory: leave blank**. Redeploy. |
 | `tsc: command not found` during build | Ensure install command includes `--prod=false` (already in `vercel.json`/`render.yaml`) |
 | Vercel 500 on first request | Check Atlas IP allowlist and `MONGODB_URI` |
 | Extension can't reach API | Rebuild with correct `VITE_API_BASE_URL` |

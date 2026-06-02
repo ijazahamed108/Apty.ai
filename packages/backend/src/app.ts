@@ -38,6 +38,35 @@ export function buildApp(deps: AppDeps): Express {
   app.locals.db = deps.db;
   app.locals.jwtSecret = deps.jwtSecret;
 
+  app.get('/', (_req: Request, res: Response) => {
+    res.type('html').send(`<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mini Apty API</title>
+    <style>
+      body { font-family: system-ui, sans-serif; max-width: 720px; margin: 48px auto; padding: 0 20px; color: #111827; }
+      code { background: #e5e7eb; padding: 2px 6px; border-radius: 4px; }
+      a { color: #2563eb; }
+      .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin: 16px 0; }
+    </style>
+  </head>
+  <body>
+    <h1>Mini Apty</h1>
+    <p>API is running. Use the Chrome extension for author and preview flows.</p>
+    <div class="card">
+      <h2>Health check</h2>
+      <p><a href="/health">GET /health</a></p>
+    </div>
+    <div class="card">
+      <h2>Extension</h2>
+      <p>Build with <code>VITE_API_BASE_URL</code> pointing to this deployment, then load <code>packages/extension/dist</code> in Chrome.</p>
+    </div>
+  </body>
+</html>`);
+  });
+
   app.get('/health', (_req: Request, res: Response) => {
     res.json({ status: 'ok', service: 'mini-apty-api' });
   });
