@@ -25,7 +25,7 @@ export default defineConfig(({ mode }) => {
       proxy: apiProxy,
     },
     build: {
-      outDir: 'public',
+      outDir: resolve(repoRoot, 'dist'),
       emptyOutDir: true,
     },
   };

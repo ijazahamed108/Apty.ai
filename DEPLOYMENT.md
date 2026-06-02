@@ -44,13 +44,13 @@ If your password contains special characters (like `@`, `#`, `$`, etc.), you **m
 3. Root directory: repository root (monorepo).
 4. **Critical — Vercel project settings** (Settings → Build & Deployment):
    - **Framework Preset:** Vite
-   - **Output Directory:** `public`
+   - **Output Directory:** `dist` (must match `vercel.json`; do not use `public`)
    - Install/build commands are read from `vercel.json` automatically
 
 5. The `vercel.json` file configures:
    - Install: `npm install -g pnpm@9 && pnpm install --prod=false`
    - Build: `pnpm -w run build:vercel`
-   - React frontend output: `packages/web` builds into `packages/web/public/`, then copies to root `public/` for Vercel
+   - React frontend output: Vite writes to root `dist/` (Vercel static output)
    - Express API: `api/index.ts` handles `/health`, `/auth/*`, and `/walkthroughs/*`
    
    **Note:** The Chrome extension remains the main challenge deliverable. The Vercel React app is a simple live demo/landing frontend for the MERN deployment.
@@ -153,9 +153,9 @@ pnpm build:extension          # dist for Chrome
 
 | Issue | Fix |
 |-------|-----|
-| `No entrypoint found in output directory: "public"` | Keep Output Directory as `public`; `build:vercel` creates it from the web package build |
+| `No entrypoint found in output directory` | Output Directory must be `dist`, not `public`; redeploy after latest `vercel.json` |
 | `ERR_PNPM_NO_SCRIPT` in monorepo build | Use `pnpm -w run ...` for root scripts; Vercel can invoke commands from a workspace subfolder |
-| `No Output Directory named "public" found` | Run `pnpm -w run build:vercel`; it must create both `packages/web/public/index.html` and `public/index.html` |
+| `No Output Directory named "dist" found` | Run `pnpm -w run build:vercel`; it must create `dist/index.html` at repo root |
 | `tsc: command not found` during build | Ensure install command includes `--prod=false` (already in `vercel.json`/`render.yaml`) |
 | Vercel 500 on first request | Check Atlas IP allowlist and `MONGODB_URI` |
 | Extension can't reach API | Rebuild with correct `VITE_API_BASE_URL` |
