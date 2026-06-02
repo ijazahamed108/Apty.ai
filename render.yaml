@@ -6,7 +6,7 @@ services:
     name: mini-apty-api
     runtime: node
     plan: free
-    buildCommand: npm install -g pnpm@9 && pnpm install && pnpm --filter @mini-apty/shared build && pnpm --filter backend build
+    buildCommand: npm install -g pnpm@9 && pnpm install --prod=false && pnpm --filter @mini-apty/shared build && pnpm --filter backend build
     startCommand: node packages/backend/dist/index.js
     healthCheckPath: /health
     envVars:

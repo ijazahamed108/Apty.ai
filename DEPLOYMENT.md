@@ -42,15 +42,13 @@ If your password contains special characters (like `@`, `#`, `$`, etc.), you **m
 1. Push repo to **GitHub** or **GitLab** and import in [vercel.com](https://vercel.com).
 2. Framework preset: **Other**.
 3. Root directory: repository root (monorepo).
-4. Build command (from `vercel.json`):
-   ```bash
-   pnpm --filter @mini-apty/shared build && pnpm --filter backend build
-   ```
-5. Install command:
-   ```bash
-   npm install -g pnpm@9 && pnpm install
-   ```
-6. Set **Environment variables** (Production):
+4. The `vercel.json` file auto-configures:
+   - Install: `npm install -g pnpm@9 && pnpm install --prod=false`
+   - Build: `pnpm --filter @mini-apty/shared build && pnpm --filter backend build`
+   
+   **Note:** `--prod=false` ensures devDependencies (TypeScript) are installed for build.
+
+5. Set **Environment variables** (Production):
 
    | Variable | Example |
    |----------|---------|
@@ -147,11 +145,13 @@ pnpm build:extension          # dist for Chrome
 
 | Issue | Fix |
 |-------|-----|
+| `tsc: command not found` during build | Ensure install command includes `--prod=false` (already in `vercel.json`/`render.yaml`) |
 | Vercel 500 on first request | Check Atlas IP allowlist and `MONGODB_URI` |
 | Extension can't reach API | Rebuild with correct `VITE_API_BASE_URL` |
 | CORS errors | Set `CORS_ORIGIN=*` or include extension origin |
 | Render cold start | Wait ~30–60s after idle; use UptimeRobot ping on `/health` |
 | GitLab Pages 404 for API | Pages is static only — API must be on Vercel/Render |
+| Password with special chars fails | URL-encode password (see section 1) |
 
 ---
 
