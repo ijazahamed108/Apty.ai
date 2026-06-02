@@ -37,11 +37,18 @@ export async function apiFetch<T>(
     return undefined as T;
   }
 
-  const body: unknown = await response.json().catch(() => null);
+  const contentType = response.headers.get('content-type') ?? '';
+  const body: unknown = contentType.includes('application/json')
+    ? await response.json().catch(() => null)
+    : await response.text().catch(() => null);
 
   if (!response.ok) {
     const errorBody = body as { error?: { code?: string; message?: string } } | null;
-    const message = errorBody?.error?.message ?? 'Request failed';
+    const fallback =
+      typeof body === 'string' && body.trim().length > 0 && !body.includes('<!DOCTYPE')
+        ? body.trim()
+        : `Request failed (${response.status})`;
+    const message = errorBody?.error?.message ?? fallback;
     const code = errorBody?.error?.code;
 
     if (response.status === 401) {
