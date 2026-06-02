@@ -43,16 +43,16 @@ If your password contains special characters (like `@`, `#`, `$`, etc.), you **m
 2. Framework preset: **Other**.
 3. Root directory: repository root (monorepo).
 4. **Critical — Vercel project settings** (Settings → Build & Deployment):
-   - **Output Directory:** leave **blank** (do not set `public`)
    - **Framework Preset:** Other
    - Install/build commands are read from `vercel.json` automatically
+   - `vercel.json` uses explicit `builds/routes`, so dashboard Build & Development settings are ignored by Vercel.
 
 5. The `vercel.json` file configures:
    - Install: `npm install -g pnpm@9 && pnpm install --prod=false`
-   - Build: `pnpm -w run build:vercel` (the `-w` flag runs from monorepo root — required on Vercel)
-   - Serverless function: `api/index.ts` (Express API)
+   - Build: `pnpm -w run build:backend` (the `-w` flag runs from monorepo root — required on Vercel)
+   - Serverless function builder: `api/index.ts` via `@vercel/node`
    
-   **Note:** Vercel clears the output directory before build. The `build:vercel` script writes `public/index.html` after compiling TypeScript — this is required when Output Directory is `public`.
+   **Note:** This project is deployed as a serverless API, not as a static `public/` output deployment.
 
 6. Set **Environment variables** (Production):
 
@@ -150,9 +150,9 @@ pnpm build:extension          # dist for Chrome
 
 | Issue | Fix |
 |-------|-----|
-| `No entrypoint found in output directory: "public"` | Set Framework to **Other**, ensure `public/index.html` exists, `framework: null` in vercel.json |
-| `ERR_PNPM_NO_SCRIPT Missing script: build:vercel` | Use `pnpm -w run build:vercel` (already in `vercel.json`) — Vercel runs from a workspace subfolder |
-| `No Output Directory named "public" found` | Build must **generate** `public/` — run `pnpm -w run build:vercel` locally to verify |
+| `No entrypoint found in output directory: "public"` | Use explicit `builds/routes` in `vercel.json`; do not deploy this as a Node/static output-directory project |
+| `ERR_PNPM_NO_SCRIPT` in monorepo build | Use `pnpm -w run ...` for root scripts; Vercel can invoke commands from a workspace subfolder |
+| `No Output Directory named "public" found` | Remove output-directory deployment settings; the API is built through `@vercel/node` |
 | `tsc: command not found` during build | Ensure install command includes `--prod=false` (already in `vercel.json`/`render.yaml`) |
 | Vercel 500 on first request | Check Atlas IP allowlist and `MONGODB_URI` |
 | Extension can't reach API | Rebuild with correct `VITE_API_BASE_URL` |

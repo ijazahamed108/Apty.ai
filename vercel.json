@@ -3,18 +3,20 @@
   "version": 2,
   "name": "mini-apty",
   "installCommand": "npm install -g pnpm@9 && pnpm install --frozen-lockfile=false --prod=false",
-  "buildCommand": "pnpm -w run build:vercel",
-  "outputDirectory": "public",
-  "rewrites": [
-    { "source": "/health", "destination": "/api" },
-    { "source": "/auth/(.*)", "destination": "/api" },
-    { "source": "/walkthroughs/(.*)", "destination": "/api" },
-    { "source": "/walkthroughs", "destination": "/api" },
-    { "source": "/", "destination": "/api" }
-  ],
-  "functions": {
-    "api/index.ts": {
-      "maxDuration": 30
+  "buildCommand": "pnpm -w run build:backend",
+  "builds": [
+    {
+      "src": "api/index.ts",
+      "use": "@vercel/node",
+      "config": {
+        "maxDuration": 30
+      }
     }
-  }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "api/index.ts"
+    }
+  ]
 }
