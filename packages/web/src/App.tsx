@@ -33,20 +33,40 @@ export function App() {
 
     try {
       const response = await fetch(healthUrl);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
       const contentType = response.headers.get('content-type') ?? '';
+
       if (!contentType.includes('application/json')) {
-        throw new Error('API returned non-JSON response (often a missing /api proxy on this host)');
+        const text = await response.text();
+        throw new Error(
+          text.includes('FUNCTION_INVOCATION_FAILED')
+            ? 'HTTP 500 — API function crashed. Set JWT_SECRET and MONGODB_URI in Vercel → Settings → Environment Variables, then redeploy.'
+            : `HTTP ${response.status} — API returned non-JSON response`
+        );
       }
 
-      const data = (await response.json()) as { status: string; service: string };
-      setHealthState('ok');
-      setMessage(`${data.service} is ${data.status}`);
+      const data = (await response.json()) as {
+        status?: string;
+        service?: string;
+        error?: { message?: string };
+      };
+
+      if (!response.ok) {
+        throw new Error(data.error?.message ?? `HTTP ${response.status}`);
+      }
+
+      if (data.status && data.service) {
+        setHealthState('ok');
+        setMessage(`${data.service} is ${data.status}`);
+        return;
+      }
+
+      throw new Error('Unexpected health response');
     } catch (error) {
       setHealthState('error');
+      if (error instanceof Error && error.message.startsWith('HTTP ')) {
+        setMessage(`${error.message} — check Vercel env vars (JWT_SECRET, MONGODB_URI) and function logs.`);
+        return;
+      }
       setMessage(formatFetchError(error, healthUrl));
     }
   };

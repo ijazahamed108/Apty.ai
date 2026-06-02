@@ -21,6 +21,7 @@
     "node": ">=20"
   },
   "dependencies": {
+    "@mini-apty/shared": "workspace:*",
     "@vercel/node": "^5.1.14"
   }
 }

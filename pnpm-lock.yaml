@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@mini-apty/shared':
+        specifier: workspace:*
+        version: link:packages/shared
       '@vercel/node':
         specifier: ^5.1.14
         version: 5.8.4(rollup@4.60.4)
