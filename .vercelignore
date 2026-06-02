@@ -1,0 +1,27 @@
+# Development and test files
+*.test.ts
+*.test.js
+tests/
+**/__tests__/
+coverage/
+
+# Local environment
+.env
+.env.local
+.env.*.local
+
+# Docker
+docker-compose.yml
+Dockerfile
+mongo-data/
+
+# IDE
+.vscode/
+.idea/
+.cursor/
+
+# Extension (not needed for API deployment)
+packages/extension/
+
+# Challenge PDF
+*.pdf
